@@ -115,7 +115,7 @@ run_bin() {
     exit $?
   fi
   set -e
-  echo "$_cmd_path" "$@"
+  "$_cmd_path" "$@"
 }
 
 run_container() {
