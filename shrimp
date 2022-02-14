@@ -1,0 +1,164 @@
+#!/usr/bin/env sh
+
+set -e
+
+if test -z "$SHRIMP_HOME"; then
+  SHRIMP_HOME="$HOME/.shrimp"
+fi
+if test -z "$SHRIMP_RECIPE"; then
+  SHRIMP_RECIPE="$SHRIMP_HOME/recipe"
+fi
+if test -z "$SHRIMP_BIN"; then
+  SHRIMP_BIN="$SHRIMP_HOME/bin"
+fi
+if test -z "$SHRIMP_TAG"; then
+  SHRIMP_TAG="shrimp:%s"
+fi
+if test -z "$SHRIMP_WORKDIR"; then
+  SHRIMP_WORKDIR="/etc/data"
+fi
+if test -z "$SHRIMP_BIND_CWD"; then
+  SHRIMP_BIND_CWD="true"
+fi
+if test -z "$SHRIMP_STRICT"; then
+  SHRIMP_STRICT="false"
+fi
+
+_command="$(basename "$0")"
+help() {
+  echo "Build a shim command that run original command. If the original command is not available, try container version"
+  echo
+  echo "Usage:"
+  echo "  $_command <binary name>"
+  echo
+  echo "Config:"
+  echo "  SHRIMP_HOME\t\t$SHRIMP_HOME"
+  echo "  SHRIMP_RECIPE\t\t$SHRIMP_RECIPE"
+  echo "  SHRIMP_BIN\t\t$SHRIMP_BIN"
+  echo "  SHRIMP_TAG\t\t$SHRIMP_TAG"
+  echo "  SHRIMP_ENGINE\t\t$SHRIMP_ENGINE"
+  echo "  SHRIMP_WORKDIR\t$SHRIMP_WORKDIR"
+  echo "  SHRIMP_BIND_CWD\t$SHRIMP_BIND_CWD"
+  echo "  SHRIMP_STRICT\t\t$SHRIMP_STRICT"
+  echo "  SHRIMP_BUILD_ARGS\t$SHRIMP_BUILD_ARGS"
+  echo "  SHRIMP_RUN_ARGS\t$SHRIMP_RUN_ARGS"
+}
+
+has_cmd() {
+  test -n "$(command -v "$1")" && "$1" "--help" >/dev/null 2>&1
+}
+
+shrimp() {
+  if test -z "$1"; then
+    help
+    exit 1
+  fi
+
+  _recipe="$SHRIMP_RECIPE/$1"
+  _image_tag="$(printf "$SHRIMP_TAG" "$1")"
+
+  _engine="$SHRIMP_ENGINE"
+  _recipe_file=""
+
+  if test -z "$SHRIMP_ENGINE"; then
+    if has_cmd docker; then
+      _engine="docker"
+    elif has_cmd podman; then
+      _engine="podman"
+    fi
+  fi
+
+  if has_cmd "$_engine"; then
+    if test "$_engine" = "docker"; then
+      _recipe_file="Dockerfile"
+    elif test "$_engine" = "podman"; then
+      _recipe_file="Containerfile"
+    else
+      echo "No recipe found for $1"
+      exit 1
+    fi
+  else
+    echo "Cannot find supported container engine"
+    exit 1
+  fi
+
+  if test -f "$_recipe/$_recipe_file"; then
+    echo "Building \"$1\" shim container image using $_engine..."
+    "$_engine" build $SHRIMP_BUILD_ARGS --tag "$_image_tag" - < "$_recipe/$_recipe_file"
+  else
+    echo "No recipe found for $1"
+    exit 1
+  fi
+
+  if ! test -d "$SHRIMP_BIN"; then
+    mkdir -p "$SHRIMP_BIN"
+  fi
+  ln -fs "$(realpath "$0")" "$SHRIMP_BIN/$1"
+  exit 0
+}
+
+run_container() {
+  _engine="$1"
+  _image_tag="$2"
+
+  if test -z "$("$_engine" images -q "$_image_tag")"; then
+    if test "$SHRIMP_STRICT" = "true"; then
+      echo "Recipe for \"$_command\" is not available on $_engine engine"
+      exit 1
+    else
+      command "$_command" "$@"
+      exit $?
+    fi
+  fi
+
+  shift
+  shift
+
+  args=""
+  if test "$SHRIMP_BIND_CWD" = "true"; then
+    args="-w $SHRIMP_WORKDIR -v $(pwd):$SHRIMP_WORKDIR"
+  fi
+
+  if tty -s; then
+    "$_engine" run -it --rm $args $SHRIMP_RUN_ARGS "$_image_tag" "$@"
+  else
+    "$_engine" run -i --rm $args $SHRIMP_RUN_ARGS "$_image_tag" "$@"
+  fi
+}
+
+shrimp_shim() {
+  _image_tag="$(printf "$SHRIMP_TAG" "$_command")"
+
+  if test -n "$(command -v "$_command")"; then
+    command "$_command" "$@"
+    exit $?
+  fi
+
+  _engine="$SHRIMP_ENGINE"
+
+  if test -z "$SHRIMP_ENGINE"; then
+    if has_cmd docker; then
+      _engine="docker"
+    elif has_cmd podman; then
+      _engine="podman"
+    fi
+  fi
+
+  if has_cmd "$_engine"; then
+    run_container "$_engine" "$_image_tag" "$@"
+  else
+    if test "$SHRIMP_STRICT" = "true"; then
+      echo "Cannot find supported container engine"
+      exit 1
+    else
+      command "$_command" "$@"
+      exit $?
+    fi
+  fi
+}
+
+if test "$_command" = "shrimp"; then
+  shrimp "$@"
+else
+  shrimp_shim "$@"
+fi
