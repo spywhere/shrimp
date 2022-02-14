@@ -5,6 +5,8 @@ through container
 
 :fried_shrimp: fresh from the :ocean:, packed in a :package:
 
+![shrimp](https://user-images.githubusercontent.com/1087399/153924037-f45548f8-79fe-4977-840c-ac912be53008.png)
+
 ## Support container engine
 
 - Docker
