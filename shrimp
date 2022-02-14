@@ -46,8 +46,13 @@ help() {
   echo "  SHRIMP_RUN_ARGS\t$SHRIMP_RUN_ARGS"
 }
 
+has_bin() {
+  _path="$(echo "$PATH" | sed -e "s|:$SHRIMP_BIN||g")"
+  test -n "$(PATH="$_path" command -v "$1")"
+}
+
 has_cmd() {
-  test -n "$(command -v "$1")" && "$1" "--help" >/dev/null 2>&1
+  has_bin "$1" && "$1" "--help" >/dev/null 2>&1
 }
 
 shrimp() {
@@ -99,6 +104,20 @@ shrimp() {
   exit 0
 }
 
+run_bin() {
+  _cmd="$1"
+  shift
+  _path="$(echo "$PATH" | sed -e "s|:$SHRIMP_BIN||g")"
+  set +e
+  _cmd_path="$(PATH="$_path" command -v "$_cmd" 2>&1)"
+  if test "$?" -ne 0; then
+    echo "$_cmd: command not found"
+    exit $?
+  fi
+  set -e
+  echo "$_cmd_path" "$@"
+}
+
 run_container() {
   _engine="$1"
   _image_tag="$2"
@@ -108,7 +127,7 @@ run_container() {
       echo "Recipe for \"$_command\" is not available on $_engine engine"
       exit 1
     else
-      command "$_command" "$@"
+      run_bin "$_command" "$@"
       exit $?
     fi
   fi
@@ -131,8 +150,8 @@ run_container() {
 shrimp_shim() {
   _image_tag="$(printf "$SHRIMP_TAG" "$_command")"
 
-  if test -n "$(command -v "$_command")"; then
-    command "$_command" "$@"
+  if has_bin "$_command"; then
+    run_bin "$_command" "$@"
     exit $?
   fi
 
@@ -153,7 +172,7 @@ shrimp_shim() {
       echo "Cannot find supported container engine"
       exit 1
     else
-      command "$_command" "$@"
+      run_bin "$_command" "$@"
       exit $?
     fi
   fi
