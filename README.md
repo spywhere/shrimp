@@ -12,6 +12,24 @@ through container
 
 ## Usage
 <!--FLAGS:START-->
+
+    Build a shim command that run original command. If the original command is not available, try container version
+    
+    Usage:
+      shrimp <binary name>
+    
+    Config:
+      SHRIMP_HOME		/home/runner/.shrimp
+      SHRIMP_RECIPE		/home/runner/.shrimp/recipe
+      SHRIMP_BIN		/home/runner/.shrimp/bin
+      SHRIMP_TAG		shrimp:%s
+      SHRIMP_ENGINE		
+      SHRIMP_WORKDIR	/etc/data
+      SHRIMP_BIND_CWD	true
+      SHRIMP_STRICT		false
+      SHRIMP_BUILD_ARGS	
+      SHRIMP_RUN_ARGS	
+
 <!--FLAGS:END-->
 
 ## Configurations
