@@ -2,7 +2,9 @@
 
 set -e
 
-if test -z "$SHRIMP_HOME"; then
+if test "$CI" = "true"; then
+  SHRIMP_HOME='$HOME/.shrimp'
+elif test -z "$SHRIMP_HOME"; then
   SHRIMP_HOME="$HOME/.shrimp"
 fi
 if test -z "$SHRIMP_RECIPE"; then
