@@ -19,9 +19,9 @@ through container
       shrimp <binary name>
     
     Config:
-      SHRIMP_HOME		/home/runner/.shrimp
-      SHRIMP_RECIPE		/home/runner/.shrimp/recipe
-      SHRIMP_BIN		/home/runner/.shrimp/bin
+      SHRIMP_HOME		$HOME/.shrimp
+      SHRIMP_RECIPE		$HOME/.shrimp/recipe
+      SHRIMP_BIN		$HOME/.shrimp/bin
       SHRIMP_TAG		shrimp:%s
       SHRIMP_ENGINE		
       SHRIMP_WORKDIR	/etc/data
