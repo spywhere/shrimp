@@ -31,7 +31,11 @@ help() {
   echo "Build a shim command that run original command. If the original command is not available, try container version"
   echo
   echo "Usage:"
-  echo "  $_command <binary name>"
+  echo "  $_command [options] <binary name>"
+  echo
+  echo "Option:"
+  echo "  --help\tthis message"
+  echo "  --recipe\tshow all available recipes"
   echo
   echo "Config:"
   echo "  SHRIMP_HOME\t\t$SHRIMP_HOME"
@@ -56,10 +60,42 @@ has_cmd() {
 }
 
 shrimp() {
-  if test -z "$1"; then
+  if test -z "$1" -o "$1" = "--help"; then
     help
     exit 1
   fi
+  case "$1" in
+    --recipe)
+      echo "Docker recipe:"
+      has_docker_recipe=0
+      for docker_recipe in "$SHRIMP_RECIPE"/*/Dockerfile; do
+        if test -f "$docker_recipe"; then
+          has_docker_recipe=1
+          echo "  - $(basename "$(dirname "$docker_recipe")")"
+        fi
+      done
+      if test "$has_docker_recipe" -eq 0; then
+        echo "  no Docker recipe"
+      fi
+      echo
+      echo "Podman recipe:"
+      has_podman_recipe=0
+      for podman_recipe in "$SHRIMP_RECIPE"/*/Containerfile; do
+        if test -f "$podman_recipe"; then
+          has_podman_recipe=1
+          echo "  - $(basename "$(dirname "$podman_recipe")")"
+        fi
+      done
+      if test "$has_podman_recipe" -eq 0; then
+        echo "  no Podman recipe"
+      fi
+      exit 0
+      ;;
+    --*)
+      echo "$_command: unknown flag $1"
+      exit 1
+      ;;
+  esac
 
   _recipe="$SHRIMP_RECIPE/$1"
   _image_tag="$(printf "$SHRIMP_TAG" "$1")"
