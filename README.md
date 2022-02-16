@@ -18,7 +18,11 @@ through container
     Build a shim command that run original command. If the original command is not available, try container version
     
     Usage:
-      shrimp <binary name>
+      shrimp [options] <binary name>
+    
+    Option:
+      --help	this message
+      --recipe	show all available recipes
     
     Config:
       SHRIMP_HOME		$HOME/.shrimp
