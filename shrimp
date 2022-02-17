@@ -60,7 +60,7 @@ has_cmd() {
 }
 
 shrimp() {
-  if test -z "$1" -o "$1" = "--help"; then
+  if test -z "$1" || test "$1" = "--help"; then
     help
     exit 1
   fi
