@@ -36,6 +36,7 @@ help() {
   echo "Option:"
   echo "  --help\tthis message"
   echo "  --recipe\tshow all available recipes"
+  echo "  --bin\t\tshow all available binaries"
   echo
   echo "Config:"
   echo "  SHRIMP_HOME\t\t$SHRIMP_HOME"
@@ -88,6 +89,20 @@ shrimp() {
       done
       if test "$has_podman_recipe" -eq 0; then
         echo "  no Podman recipe"
+      fi
+      exit 0
+      ;;
+    --bin)
+      echo "Shrimp binaries:"
+      has_binaries=0
+      for binary in "$SHRIMP_BIN"/*; do
+        if test -f "$binary"; then
+          has_binaries=1
+          echo "  - $(basename "$binary")"
+        fi
+      done
+      if test "$has_binaries" -eq 0; then
+        echo "  no Shrimp binaries"
       fi
       exit 0
       ;;
