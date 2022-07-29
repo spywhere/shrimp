@@ -112,6 +112,11 @@ shrimp() {
       ;;
   esac
 
+  if test "$1" = "shrimp"; then
+    echo "$_command: nice try, but no!"
+    exit 1
+  fi
+
   _recipe="$SHRIMP_RECIPE/$1"
   _image_tag="$(printf "$SHRIMP_TAG" "$1")"
 
