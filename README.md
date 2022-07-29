@@ -23,6 +23,7 @@ through container
     Option:
       --help	this message
       --recipe	show all available recipes
+      --bin		show all available binaries
     
     Config:
       SHRIMP_HOME		$HOME/.shrimp
