@@ -26,6 +26,7 @@ if test -z "$SHRIMP_STRICT"; then
   SHRIMP_STRICT="false"
 fi
 
+_engines="docker podman"
 _command="$(basename "$0")"
 help() {
   echo "Build a shim command that run original command. If the original command is not available, try container version"
@@ -49,6 +50,12 @@ help() {
   echo "  SHRIMP_STRICT\t\t$SHRIMP_STRICT"
   echo "  SHRIMP_BUILD_ARGS\t$SHRIMP_BUILD_ARGS"
   echo "  SHRIMP_RUN_ARGS\t$SHRIMP_RUN_ARGS"
+
+  echo
+  echo "Supported engines:"
+  for engine in $_engines; do
+    echo "  - $engine"
+  done
 }
 
 has_bin() {
@@ -67,17 +74,27 @@ shrimp() {
   fi
   case "$1" in
     --recipe)
-      echo "Docker recipe:"
-      has_docker_recipe=0
-      for docker_recipe in "$SHRIMP_RECIPE"/*/Dockerfile; do
-        if test -f "$docker_recipe"; then
-          has_docker_recipe=1
-          echo "  - $(basename "$(dirname "$docker_recipe")")"
+      is_first=1
+      for engine in $_engines; do
+        if test "$is_first" -eq 0; then
+          echo
+        else
+          is_first=0
+        fi
+
+        echo "Docker recipe:"
+        has_docker_recipe=0
+        for docker_recipe in $(iterate_recipe Dockerfile); do
+          if test -f "$docker_recipe"; then
+            has_docker_recipe=1
+            echo "  - $(basename "$(dirname "$docker_recipe")")"
+          fi
+        done
+        if test "$has_docker_recipe" -eq 0; then
+          echo "  no Docker recipe"
         fi
       done
-      if test "$has_docker_recipe" -eq 0; then
-        echo "  no Docker recipe"
-      fi
+
       echo
       echo "Podman recipe:"
       has_podman_recipe=0
@@ -233,6 +250,22 @@ shrimp_shim() {
     fi
   fi
 }
+
+###########
+# engines #
+###########
+
+iterate_recipe() {
+  for recipe in "$SHRIMP_RECIPE"/*/"$1"; do
+    if test -f "$recipe"; then
+      echo "$recipe"
+    fi
+  done
+}
+
+##############
+# entrypoint #
+##############
 
 if test "$_command" = "shrimp"; then
   shrimp "$@"
